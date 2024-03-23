@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <!-- Enlaza un framework CSS llamado Pico para estilos rápidos y minimalistas -->
+</head>
+
+<body>
+    <h1>Asistente de conocimiento</h1>
+    <p>¿En que puedo ayudarte?</p>
+    <button onclick="textoAVoz()">
+        Grabar mensaje
+    </button>
+    <p id="transcripcion">Texto transcrito</p>
+    <p id="respuesta">Respuesta GPT3.5</p>
+
+    <script>
+        function textoAVoz() {
+            const asistenteVoz = new webkitSpeechRecognition();
+            asistenteVoz.start();
+            asistenteVoz.onresult = resultadoTextoAVoz
+        }
+        function resultadoTextoAVoz(informacion) {
+            document.getElementById("transcripcion").innerText = informacion.results[0][0].transcript
+            
+            fetch("https://api.openai.com/v1/chat/completions",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: "Bearer -ohuRbGaqCVc6TKNE3dggT3BlbkFJwIrQEXnPrpZU2011vIKZ",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": "gpt-3.5-turbo",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a helpful assistant."
+                            },
+                            {
+                                "role": "user",
+                                "content": informacion.results[0][0].transcript
+                            }
+                        ]
+                    })
+                }
+            ).then((respuesta) => {
+                return respuesta.json()
+            }).then((respuesta) => {
+                document.getElementById("respuesta").innerText = respuesta.choices[0].message.content
+                // let utterance = new SpeechSynthesisUtterance(respuesta.choices[0].message.content);
+                // utterance.lang = "es-US";
+                // speechSynthesis.speak(utterance);
+
+                fetch("https://api.openai.com/v1/audio/speech",
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: "Bearer -ohuRbGaqCVc6TKNE3dggT3BlbkFJwIrQEXnPrpZU2011vIKZ",
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            "model": "tts-1",
+                            "input": respuesta.choices[0].message.content,
+                            "voice": "alloy"
+                        })
+                    }
+                ).then((respuesta) => {
+                    return respuesta.blob()
+                }).then((respuesta) => {
+                    let audio = document.createElement("audio")
+                    audio.src = URL.createObjectURL(respuesta)
+                    audio.controls = true
+                    document.body.appendChild(audio)
+                    audio.play()
+
+                })
+            })
+        }
+    </script>
+</body>
+
+</html>

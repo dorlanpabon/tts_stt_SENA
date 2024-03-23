@@ -1,0 +1,23 @@
+h1 {
+    color: blueviolet;
+}
+
+#texto {
+    /* background-color: antiquewhite; */
+}
+
+.azul {
+    /* background-color: bisque; */
+}
+
+main {
+    margin: auto;
+    width: 800px;
+}
+
+@media (max-width: 500px) {
+    main {
+        margin: auto;
+        width: 500px;
+    }
+}

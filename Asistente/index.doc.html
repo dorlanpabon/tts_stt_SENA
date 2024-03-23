@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <!-- Enlaza un framework CSS llamado Pico para estilos rápidos y minimalistas -->
+</head>
+
+<body>
+    <h1>Asistente de conocimiento</h1>
+    <p>¿En que puedo ayudarte?</p>
+    <button onclick="textoAVoz()">
+        Grabar mensaje
+    </button>
+    <p id="transcripcion">Texto transcrito</p>
+    <p id="respuesta">Respuestas GPT3.5</p>
+
+    <script>
+
+        function textoAVoz() {
+            const asistenteVoz = new webkitSpeechRecognition();
+            asistenteVoz.start();
+            asistenteVoz.onresult = resultadoTextoAVoz
+        }
+
+        function resultadoTextoAVoz(informacion) {
+            document.getElementById("transcripcion").innerText = informacion.results[0][0].transcript
+            preguntarGPT(informacion.results[0][0].transcript)
+        }
+
+        function preguntarGPT(transcripcion) {
+            fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=AIzaSyCb0s3KMHIu2-B3G_xvBazrvgDro7w0uUM",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "contents": [
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": "asdfasdfasdfasfd"
+                                    }
+                                ]
+                            },
+                        ],
+                        "generationConfig": {
+                            "temperature": 0.9,
+                            "topK": 1,
+                            "topP": 1,
+                            "maxOutputTokens": 2048,
+                            "stopSequences": []
+                        },
+                        "safetySettings": [
+                            {
+                                "category": "HARM_CATEGORY_HARASSMENT",
+                                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                "category": "HARM_CATEGORY_HATE_SPEECH",
+                                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                            },
+                            {
+                                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                            }
+                        ]
+                    })
+                }
+            ).then((respuesta) => {
+                return respuesta.json()
+            }).then((respuesta) => {
+                document.getElementById("respuesta").innerText = respuesta.candidates[0].content.parts[0].text
+                convertirAVoz(respuesta.candidates[0].content.parts[0].text)
+            })
+        }
+
+        function convertirAVoz(respuestaGPT) {
+            // let utterance = new SpeechSynthesisUtterance(respuestaGPT);
+            // utterance.lang = "es-US";
+            // speechSynthesis.speak(utterance);
+
+            fetch("https://api.openai.com/v1/audio/speech",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: "Bearer -ohuRbGaqCVc6TKNE3dggT3BlbkFJwIrQEXnPrpZU2011vIKZ",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": "tts-1",
+                        "input": respuestaGPT,
+                        "voice": "alloy"
+                    })
+                }
+            ).then((respuesta) => {
+                return respuesta.blob()
+            }).then((respuesta) => {
+                let audio = document.createElement("audio")
+                audio.src = URL.createObjectURL(respuesta)
+                audio.controls = true
+                document.body.appendChild(audio)
+                audio.play()
+
+            })
+        }
+
+    </script>
+</body>
+
+</html>

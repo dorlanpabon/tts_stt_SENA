@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de conocimiento</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+
+</head>
+
+<body>
+    <h1>Asistente de conocimiento</h1>
+    <button onclick="vozATexto()">
+        Grabar
+    </button>
+    <br>
+    <br>
+    <input type="text" id="texto">
+    <button onclick="textoAVoz()">
+        Texto A Voz
+    </button>
+
+    <p id="transcripcion">Transcripcion</p>
+    <p id="respuesta">Respuesta</p>
+
+    <script>
+        
+        function vozATexto() {
+            let asistenteVoz = new webkitSpeechRecognition();
+            asistenteVoz.continuous = true
+            asistenteVoz.start();
+            asistenteVoz.onresult = procesarTranscripcion;
+        }
+
+        function textoAVoz() {
+            let texto = document.getElementById("texto").value;
+            peticionGPT(texto);
+        }
+
+        function procesarTranscripcion(informacion) {
+
+            console.log(informacion)
+            let transcripcion = informacion.results[informacion.results.length - 1][0].transcript
+            document.getElementById("transcripcion").innerText = transcripcion
+
+            peticionGPT(transcripcion)
+        }
+
+        function peticionGPT(transcripcion) {
+            fetch("https://api.openai.com/v1/chat/completions",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer -LLqbA5jYDoq5MvD1kAF6T3BlbkFJ9oyVlcLXluV3SgTRTsQi"
+                    },
+                    body: JSON.stringify(
+                        {
+                            "model": "gpt-3.5-turbo",
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "Eres un traductor de español a ingles"
+                                },
+                                {
+                                    "role": "user",
+                                    "content": transcripcion
+                                }
+                            ]
+                        }
+                    )
+                }
+            )
+                .then((res) => res.json())
+                .then((respuesta) => {
+                    let texto = respuesta.choices[0].message.content
+                    document.getElementById("respuesta").innerText = texto
+
+                    convertirTextoAudio(texto)
+
+                })
+        }
+
+        function convertirTextoAudio(texto) {
+            // let textoAReproducir = new SpeechSynthesisUtterance(texto)
+            // speechSynthesis.speak(textoAReproducir)
+
+            fetch("https://api.openai.com/v1/audio/speech",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer -LLqbA5jYDoq5MvD1kAF6T3BlbkFJ9oyVlcLXluV3SgTRTsQi"
+                    },
+                    body: JSON.stringify(
+                        {
+                            "model": "tts-1",
+                            "input": texto,
+                            "voice": "alloy"
+                        }
+                    )
+                }
+            )
+                .then((res) => res.blob())
+                .then((respuesta) => {
+                    let audio = document.createElement("audio")
+                    audio.controls = true
+                    audio.src = URL.createObjectURL(respuesta)
+                    audio.play()
+                    document.body.appendChild(audio)
+                })
+        }
+
+    </script>
+</body>
+
+</html>

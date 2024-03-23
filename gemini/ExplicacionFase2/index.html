@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fase2</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+</head>
+
+<body>
+    <h1>Bienvenido al asistente del futuro</h1>
+    <button onclick="vozATexto()">Grabar</button>
+    <p id="transcripcion">Transcripcion</p>
+    <p id="respuesta">Respuesta</p>
+
+    <script>
+
+        function vozATexto() {
+            const asistenteVoz = new webkitSpeechRecognition();
+            asistenteVoz.start()
+            asistenteVoz.onresult = procesarTranscripcion
+        }
+
+        function procesarTranscripcion(informacion) {
+            //console.log(informacion)
+            const transcripcion = informacion.results[0][0].transcript
+            document.getElementById("transcripcion").innerText = transcripcion
+
+
+            fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer -erYJTBtYCykJGSru72CrT3BlbkFJs5eH3t1cajxod9cvCOX1'
+                },
+                body: JSON.stringify({
+                    'model': 'gpt-3.5-turbo',
+                    'messages': [
+                        {
+                            'role': 'system',
+                            'content': 'You are a helpful assistant.'
+                        },
+                        {
+                            'role': 'user',
+                            'content': transcripcion
+                        }
+                    ]
+                })
+            })
+                .then(json)
+                .then(procesarRespuesta)
+
+        }
+
+        function json(respuesta) {
+            return respuesta.json()
+        }
+
+        function procesarRespuesta(respuesta) {
+            const contenido = respuesta.choices[0].message.content
+            document.getElementById("respuesta").innerText = contenido
+
+            // const textoAVoz = new SpeechSynthesisUtterance(contenido)
+            // speechSynthesis.speak(textoAVoz)
+
+            fetch('https://api.openai.com/v1/audio/speech', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer -erYJTBtYCykJGSru72CrT3BlbkFJs5eH3t1cajxod9cvCOX1',
+                    'Content-Type': 'application/json'
+                },
+                // body: '{\n    "model": "tts-1",\n    "input": "The quick brown fox jumped over the lazy dog.",\n    "voice": "alloy"\n  }',
+                body: JSON.stringify({
+                    'model': 'tts-1',
+                    'input': contenido,
+                    'voice': 'alloy'
+                })
+            })
+                .then(blob)
+                .then(procesarAudio)
+        }
+
+        function blob(respuesta) {
+            return respuesta.blob()
+        }
+
+        function procesarAudio(respuesta) {
+            let audio = document.createElement("audio")
+            audio.src = URL.createObjectURL(respuesta)
+            audio.play()
+            audio.controls = true
+            document.body.appendChild(audio)
+        }
+
+    </script>
+
+</body>
+
+</html>
